@@ -16,7 +16,7 @@ use arfflib;
 use common;
 
 # handle cmdline options and arguments
-my ($manRankFilename, $hypSourceDir, $refSourceDir, $modelFilename, $tempDir) = processOptions();
+my ($manRankFilename, $hypSourceDir, $refSourceDir, $modelFilename, $tempDir) = processArgs();
 
 # create a workdir
 $tempDir = common::initTempDir($tempDir);
@@ -265,11 +265,7 @@ sub getTuplesFromRankFile {
 			my $srcName = "$setId.$srcLang";
 			
 			$result->{ $hypName } = {
-<<<<<<< HEAD
-				'srchyp' => (($sysId eq "_ref")? $refName: $hypName),
-=======
 				'hypisref' => ($sysId eq "_ref"),
->>>>>>> 00047bd... minor changes
 				'ref' => $refName,
 				'src' => $srcName};
 		}
@@ -310,13 +306,16 @@ sub maybeclose {
 #####
 #
 #####
-sub processOptions {
+sub processArgs {
+	common::processOptions();
+	
 	if (@ARGV < 4) {
 		print STDERR "This script trains a model using a manual ranking file and\n" .
 			"a set of hypothesis translations from a given directory\n" .
 			"(and their corresponding source and reference files in another given directory)\n\n" .
-			"Usage: train-model.pl man-rank-file hyp-dir ref-dir file-to-save-model-to [temp-dir]\n\n" .
-			"specify the same temp-dir to avoid re-generating the error analysis files and such\n\n";
+			"Usage: train-model.pl [options] man-rank-file hyp-dir ref-dir file-to-save-model-to [temp-dir]\n\n" .
+			"specify the same temp-dir to avoid re-generating the error analysis files and such\n\n" .
+			"Options: -m sets the number of threads to use (default: 2)\n\n";
 		die;
 	}
 	

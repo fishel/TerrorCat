@@ -22,11 +22,7 @@ HYP_TGT_LANG=$(shell basename $* | cut -d . -f 2 | cut -d - -f 2)
 
 ## Addicter's error category per PoS frequency vector
 %.add-freqvec: %.add-err
-<<<<<<< HEAD
-	cat $< | bin/addposscores.pl possets/$(HYP_TGT_LANG).dat > $@
-=======
 	cat $< | perl $(HOME)/bin/addposscores.pl $(HOME)/possets/$(HYP_TGT_LANG).dat > $@
->>>>>>> 00047bd... minor changes
 	@$(CHECKLEN)
 
 ##### Hjerson #####

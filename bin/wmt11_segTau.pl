@@ -54,12 +54,11 @@ my %ctConcordPairs;
 my %ctDiscordPairs;
 
 open HUMANSCORES, '<', $ARGV[1];
-my $header = <HUMANSCORES>;
 while (<HUMANSCORES>) {
-	(my $srclang, my $trglang, my $srcIndex, my $documentId, my $segmentId, my $judgeId, my $system1Number, my $system1Id, my $system2Number, my $system2Id, my $system3Number, my $system3Id, my $system4Number, my $system4Id, my $system5Number, my $system5Id, my $system1rank, my $system2rank, my $system3rank, my $system4rank, my $system5rank) = split(/,/, $_);
-	(my $langPair, my $testSet) = split(/\./, $documentId);
-	$testSet = "newssyscombtest2011";
-	my $id = $documentId . "-" . $segmentId;
+	#(my $srclang, my $trglang, my $srcIndex, my $documentId, my $segmentId, my $judgeId, my $system1Number, my $system1Id, my $system2Number, my $system2Id, my $system3Number, my $system3Id, my $system4Number, my $system4Id, my $system5Number, my $system5Id, my $system1rank, my $system2rank, my $system3rank, my $system4rank, my $system5rank) = split(/,/, $_);
+	#(my $langPair, my $testSet) = split(/\./, $documentId);
+	my ($langPair, $testSet, $segmentId, $system1Id, $system1rank, $system2Id, $system2rank, $system3Id, $system3rank, $system4Id, $system4rank, $system5Id, $system5rank) = split(/,/);
+	#$testSet = "newssyscombtest2011";
 	my @systems = ( $system1Id, $system2Id, $system3Id, $system4Id, $system5Id );
 	my @humanScores = ( $system1rank, $system2rank, $system3rank, $system4rank, $system5rank );
 	for (my $i=0; $i < @systems; $i++) {
