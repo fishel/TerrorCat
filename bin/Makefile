@@ -1,9 +1,3 @@
-ADDICTER_PATH := /home/mphi/proj/addicter
-HJERSON_PATH := /home/mphi/proj/hjerson
-WEKAJAR := /home/mphi/proj/weka/weka.jar
-
-JAVA := java -Xmx5g -cp $(WEKAJAR)
-
 .SECONDARY:
 
 ##########
@@ -12,7 +6,7 @@ JAVA := java -Xmx5g -cp $(WEKAJAR)
 
 ##### Shortcut variables #####
 
-CHECKLEN=bash bin/checklen.sh $*.hfact $@
+CHECKLEN=bash $(HOME)/bin/checklen.sh $*.hfact $@
 HYP_TGT_LANG=$(shell basename $* | cut -d . -f 2 | cut -d - -f 2)
 
 ##### Addicter #####
@@ -28,21 +22,25 @@ HYP_TGT_LANG=$(shell basename $* | cut -d . -f 2 | cut -d - -f 2)
 
 ## Addicter's error category per PoS frequency vector
 %.add-freqvec: %.add-err
+<<<<<<< HEAD
 	cat $< | bin/addposscores.pl possets/$(HYP_TGT_LANG).dat > $@
+=======
+	cat $< | perl $(HOME)/bin/addposscores.pl $(HOME)/possets/$(HYP_TGT_LANG).dat > $@
+>>>>>>> 00047bd... minor changes
 	@$(CHECKLEN)
 
 ##### Hjerson #####
 
-HJFACT_CHECKLEN=bash bin/checklen.sh $< $@
+HJFACT_CHECKLEN=bash $(HOME)/bin/checklen.sh $< $@
 
 ## Surface forms in a separate file for Hjerson
 %-surf: %
-	cat $< | perl bin/exfact.pl 0 > $@
+	cat $< | perl $(HOME)/bin/exfact.pl 0 > $@
 	@$(HJFACT_CHECKLEN)
 
 ## Lemmas in a separate file for Hjerson
 %-lem: %
-	cat $< | perl bin/exfact.pl 2 > $@
+	cat $< | perl $(HOME)/bin/exfact.pl 2 > $@
 	@$(HJFACT_CHECKLEN)
 
 ## Hjerson's translation error analysis
@@ -51,7 +49,7 @@ HJFACT_CHECKLEN=bash bin/checklen.sh $< $@
 
 ## Hjerson's error category per PoS frequency vector
 %.hj-freqvec: %.hj-err %.hfact
-	perl bin/hjposscores.pl $*.hj-err $*.hfact $*.rfact possets/$(HYP_TGT_LANG).dat > $@
+	perl $(HOME)/bin/hjposscores.pl $*.hj-err $*.hfact $*.rfact $(HOME)/possets/$(HYP_TGT_LANG).dat > $@
 	@$(CHECKLEN)
 
 ##### Final frequency vectors #####

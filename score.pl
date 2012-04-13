@@ -32,9 +32,17 @@ unless (-e $labelmeFilename) {
 	createLabelmeFile($tuples, $set, $lp, $tempDir . "/" . $common::auxFilesDir, $labelmeFilename, $labelmeIdsFn);
 }
 
+<<<<<<< HEAD
 # apply the classifier to predict on the created labelme file:
 common::syscmd("java -Xmx5g -cp $common::wekaJar $common::wekaClassifier -T $labelmeFilename -l $modelFilename -classifications weka.classifiers.evaluation.output.prediction.CSV | cut -d , -f 3,5 | cut -d : -f 2 | grep -v '^\\s*\$' | tail -n +3 | paste -d , $labelmeIdsFn - | perl $Bin/bin/genfinscores.pl");
 
+=======
+my $sysLevIndicator = ($common::doSysLev? "x": "");
+
+# apply the classifier to predict on the created labelme file:
+common::syscmd("java -Xmx5g -cp $common::wekaJar $common::wekaClassifier -T $labelmeFilename -l $modelFilename -classifications weka.classifiers.evaluation.output.prediction.CSV | cut -d , -f 3,5 | cut -d : -f 2 | grep -v '^\\s*\$' | tail -n +3 | paste -d , $labelmeIdsFn - | perl $Bin/bin/genfinscores.pl $sysLevIndicator");
+
+>>>>>>> 00047bd... minor changes
 #####
 #
 #####
@@ -126,7 +134,11 @@ sub tuplesFromDir {
 			}
 			
 			$_ => {
+<<<<<<< HEAD
 				'srchyp' => $_,
+=======
+				'hypisref' => undef,
+>>>>>>> 00047bd... minor changes
 				'ref' => "$set.$tgtLang",
 				'src' => "$set.$srcLang",
 				'set' => $set,
@@ -143,7 +155,11 @@ sub tuplesFromDir {
 	my ($srcLang, $tgtLang) = split(/-/, $genLp);
 	
 	$hypFiles{"$genSet.$genLp._ref"} = {
+<<<<<<< HEAD
 			'srchyp' => "$genSet.$tgtLang",
+=======
+			'hypisref' => 1,
+>>>>>>> 00047bd... minor changes
 			'ref' => "$genSet.$tgtLang",
 			'src' => "$genSet.$srcLang",
 			'set' => $genSet,
@@ -158,5 +174,14 @@ sub tuplesFromDir {
 #
 #####
 sub processOptions {
+	if (@ARGV < 3) {
+		print STDERR "This script applies a previously trained model to rank\n" .
+			"a set of hypothesis translations from a given directory\n" .
+			"(and their corresponding source and reference files in another given directory)\n\n" .
+			"Usage: score.pl hypothesis-files-dir reference-files-dir trained-model-filename [temporary-dir]\n\n" .
+			"specify the same temp-dir to avoid re-generating the error analysis files and such\n\n";
+		die;
+	}
+	
 	return @ARGV;
 }

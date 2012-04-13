@@ -23,10 +23,12 @@ $tempDir = common::initTempDir($tempDir);
 
 my $trainingFilename = $tempDir . "/train.arff";
 
+my $manRankData = readManRanks($manRankFilename);
+
 # rebuild training file if necessary
 unless (-e $trainingFilename) {
 	# get list of hyp-ref-src tuples from manual ranking file
-	my $tuples = getTuplesFromRankFile($manRankFilename);
+	my $tuples = getTuplesFromRankFile($manRankData);
 	
 	# make links to hyp, ref and src files
 	common::linkFiles($hypSourceDir, $refSourceDir, $tuples, $tempDir);
@@ -35,19 +37,34 @@ unless (-e $trainingFilename) {
 	common::buildFiles($tempDir, $tuples);
 	
 	# build the training set file
-	createTrainingFile($manRankFilename, $tempDir . "/" . $common::auxFilesDir, $trainingFilename);
+	createTrainingFile($manRankData, $tempDir . "/" . $common::auxFilesDir, $trainingFilename);
 }
 
 # train a model on the newly created file
-common::syscmd("java -Xmx5g -cp $common::wekaJar $common::wekaClassifier -v -M $common::wekaMoreArgs -t $trainingFilename -d $modelFilename");
+common::syscmd("java -Xmx5g -cp $common::wekaJar $common::wekaClassifier -v -M $common::wekaMoreArgs -t $trainingFilename -T $trainingFilename -d $modelFilename");
+
+#####
+#
+#####
+sub readManRanks {
+	my ($fn) = @_;
+	
+	my $fh = getFh($fn);
+	
+	my @data = <$fh>;
+	
+	maybeclose($fh, $fn);
+	
+	return \@data;
+}
 
 #####
 #
 #####
 sub createTrainingFile {
-	my ($manRankFile, $tmpAuxDir, $tgtFilename) = @_;
+	my ($manRankData, $tmpAuxDir, $tgtFilename) = @_;
 	
-	my $stats = fillStats($manRankFile, $tmpAuxDir);
+	my $stats = fillStats($manRankData, $tmpAuxDir);
 	
 	displayStats($stats, $tgtFilename);
 }
@@ -159,13 +176,11 @@ sub loadData {
 #
 #####
 sub fillStats {
-	my ($manRankFile, $srcDir) = @_;
+	my ($manRankData, $srcDir) = @_;
 	
 	my $result = {};
 	
-	my $fh = getFh($manRankFile);
-	
-	while (<$fh>) {
+	for (@$manRankData) {
 		s/[\n\r]//g;
 		
 		my ($lp, $set, $lineNr, @rawRanks) = split(/,/);
@@ -186,8 +201,6 @@ sub fillStats {
 			}
 		}
 	}
-	
-	maybeclose($fh);
 	
 	return $result;
 }
@@ -231,13 +244,11 @@ sub submitPair {
 #
 #####
 sub getTuplesFromRankFile {
-	my ($filename) = @_;
+	my ($data) = @_;
 	
 	my $result = {};
 	
-	my $fh = getFh($filename);
-	
-	while(<$fh>) {
+	for (@$data) {
 		s/[\r\n]//g;
 		
 		my @fields = split(/,/);
@@ -254,13 +265,15 @@ sub getTuplesFromRankFile {
 			my $srcName = "$setId.$srcLang";
 			
 			$result->{ $hypName } = {
+<<<<<<< HEAD
 				'srchyp' => (($sysId eq "_ref")? $refName: $hypName),
+=======
+				'hypisref' => ($sysId eq "_ref"),
+>>>>>>> 00047bd... minor changes
 				'ref' => $refName,
 				'src' => $srcName};
 		}
 	}
-	
-	maybeclose($fh, $filename);
 	
 	return $result;
 }
@@ -298,5 +311,14 @@ sub maybeclose {
 #
 #####
 sub processOptions {
+	if (@ARGV < 4) {
+		print STDERR "This script trains a model using a manual ranking file and\n" .
+			"a set of hypothesis translations from a given directory\n" .
+			"(and their corresponding source and reference files in another given directory)\n\n" .
+			"Usage: train-model.pl man-rank-file hyp-dir ref-dir file-to-save-model-to [temp-dir]\n\n" .
+			"specify the same temp-dir to avoid re-generating the error analysis files and such\n\n";
+		die;
+	}
+	
 	return @ARGV;
 }
