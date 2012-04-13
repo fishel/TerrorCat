@@ -2,12 +2,10 @@
 use strict;
 
 ########################
-# TODO: parameter processing, complaining about bad parameters, parametrize #threads & others,
+# TODO: parameter processing, complaining about bad parameters, parametrize #threads, re-doing & others,
 # usage message,...
 ########################
 
-use File::Temp qw(tempfile tempdir);
-use Cwd;
 use FindBin qw($Bin);
 
 BEGIN {
@@ -15,20 +13,13 @@ BEGIN {
 }
 
 use arfflib;
-
-our $sourceFileSuffix = ".fact";
-our $vecSuffix = "freqvec";
-our $auxFilesDir = "auxfiles";
-
-our $wekaJar = "/home/mphi/proj/weka/weka.jar";
-our $wekaClassifier = "weka.classifiers.functions.SMO";
-our $wekaMoreArgs = "-C 3";
+use common;
 
 # handle cmdline options and arguments
 my ($manRankFilename, $hypSourceDir, $refSourceDir, $modelFilename, $tempDir) = processOptions();
 
 # create a workdir
-$tempDir = initTempDir($tempDir);
+$tempDir = common::initTempDir($tempDir);
 
 my $trainingFilename = $tempDir . "/train.arff";
 
@@ -36,22 +27,19 @@ my $trainingFilename = $tempDir . "/train.arff";
 unless (-e $trainingFilename) {
 	# get list of hyp-ref-src tuples from manual ranking file
 	my $tuples = getTuplesFromRankFile($manRankFilename);
-
+	
 	# make links to hyp, ref and src files
-	linkFiles($hypSourceDir, $refSourceDir, $tuples, $tempDir);
-
+	common::linkFiles($hypSourceDir, $refSourceDir, $tuples, $tempDir);
+	
 	# use the Makefile to build freqvec files
-	my $vecFileList = join(" ", map { "$tempDir/$auxFilesDir/$_.$vecSuffix" } keys %$tuples);
-	system("make -j8 -f $Bin/bin/Makefile $vecFileList");
+	common::buildFiles($tempDir, $tuples);
 	
 	# build the training set file
-	createTrainingFile($manRankFilename, $tempDir . "/" . $auxFilesDir, $trainingFilename);
+	createTrainingFile($manRankFilename, $tempDir . "/" . $common::auxFilesDir, $trainingFilename);
 }
 
 # train a model on the newly created file
-my $cmd = "java -Xmx5g -cp $wekaJar $wekaClassifier -v -M $wekaMoreArgs -t $trainingFilename -d $modelFilename";
-print "Running $cmd;\n";
-system($cmd);
+common::syscmd("java -Xmx5g -cp $common::wekaJar $common::wekaClassifier -v -M $common::wekaMoreArgs -t $trainingFilename -d $modelFilename");
 
 #####
 #
@@ -114,7 +102,7 @@ sub displayPair {
 sub getData {
 	my ($fHash, $path, $id, $lineNr) = @_;
 	
-	my $fullPath = join(".", $path, $id, $vecSuffix);
+	my $fullPath = join(".", $path, $id, $common::vecSuffix);
 	
 	unless ($fHash->{$fullPath}) {
 		$fHash->{$fullPath} = loadData($fullPath);
@@ -142,10 +130,10 @@ sub loadData {
 	
 	my $path = $paramPath;
 	
-	if ($path =~ /^(.*)\/..-(..)\/([^.]+)\...-..\._ref\.$vecSuffix$/) {
+	if ($path =~ /^(.*)\/..-(..)\/([^.]+)\...-..\._ref\.$common::vecSuffix$/) {
 		my ($prePath, $tgtLang, $set) = ($1, $2, $3);
 
-		$path = "$prePath/src-ref/$set.$tgtLang.$vecSuffix";
+		$path = "$prePath/src-ref/$set.$tgtLang.$common::vecSuffix";
 	}
 	
 	if ($path =~ /_ref/) {
@@ -242,59 +230,6 @@ sub submitPair {
 		
 		#1 for rank2 < rank1 (better) and -1 otherwise
 		$target->{$path}->{$lineNr}->{$r2->{'id'} . "+" . $r1->{'id'}}->{$r1->{'rank'} <=> $r2->{'rank'}}++;
-	}
-}
-
-#####
-#
-#####
-sub initTempDir {
-	my ($tmpDir) = @_;
-	
-	unless (defined($tmpDir)) {
-		$tmpDir = tempdir("terrorcat-XXXXX");
-	}
-	
-	unless (-e $tmpDir) {
-		mkdir($tmpDir);
-	}
-	
-	unless (-e "$tmpDir/$auxFilesDir") {
-		mkdir("$tmpDir/$auxFilesDir");
-	}
-	
-	return $tmpDir;
-}
-
-#####
-#
-#####
-sub linkFiles {
-	my ($hypSrcDir, $refSrcDir, $tupleSet, $tmpDir) = @_;
-	
-	while (my ($hypName, $refSrcHash) = each(%$tupleSet)) {
-		maybelink($hypSrcDir, $hypName, $tmpDir, $hypName . ".hfact");
-		maybelink($refSrcDir, $refSrcHash->{'ref'}, $tmpDir, $hypName . ".rfact");
-		maybelink($refSrcDir, $refSrcHash->{'src'}, $tmpDir, $hypName . ".sfact");
-	}
-}
-
-#####
-#
-#####
-sub maybelink {
-	my ($srcDir, $srcFile, $tgtDir, $tgtName) = @_;
-	
-	my $oldFile = $srcDir . "/" . $srcFile . $sourceFileSuffix;
-	my $newFile = $tgtDir . "/" . $auxFilesDir . "/" . $tgtName;
-	
-	unless ($oldFile =~ /^[\/~]/) {
-		$oldFile = Cwd::cwd() . "/" . $oldFile;
-	}
-	
-	unless (-l $newFile) {
-		symlink($oldFile, $newFile);
-		print "linked $newFile --> $oldFile;\n";
 	}
 }
 
