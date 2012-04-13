@@ -28,7 +28,7 @@ HYP_TGT_LANG=$(shell basename $* | cut -d . -f 2 | cut -d - -f 2)
 
 ## Addicter's error category per PoS frequency vector
 %.add-freqvec: %.add-err
-	cat $< | $(ADDICTER_PATH)/err2counts.pl possets/$(HYP_TGT_LANG).dat > $@
+	cat $< | bin/addposscores.pl possets/$(HYP_TGT_LANG).dat > $@
 	@$(CHECKLEN)
 
 ##### Hjerson #####

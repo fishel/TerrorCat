@@ -2,12 +2,12 @@ package common;
 use strict;
 
 use File::Temp qw(tempfile tempdir);
+use FindBin qw($Bin);
 use Cwd;
 
 our $vecSuffix = "freqvec";
 our $auxFilesDir = "auxfiles";
 
-# TODO into conf file:
 our $sourceFileSuffix = ".fact";
 our $wekaJar = "/home/mphi/proj/weka/weka.jar";
 our $wekaClassifier = "weka.classifiers.functions.SMO";
@@ -41,8 +41,15 @@ sub initTempDir {
 sub buildFiles {
 	my ($tempDir, $tuples) = @_;
 	
+	my $currDir = Cwd::cwd();
+	
 	my $vecFileList = join(" ", map { "$tempDir/$auxFilesDir/$_.$vecSuffix" } keys %$tuples);
-	syscmd("make -j$threads -f $Bin/bin/Makefile $vecFileList");
+	
+	chdir($Bin);
+	
+	syscmd("make -j$threads -f bin/Makefile $vecFileList >&2");
+	
+	chdir($currDir);
 }
 
 #####
@@ -52,7 +59,7 @@ sub linkFiles {
 	my ($hypSrcDir, $refSrcDir, $tupleSet, $tmpDir) = @_;
 	
 	while (my ($hypName, $refSrcHash) = each(%$tupleSet)) {
-		maybelink($hypSrcDir, $hypName, $tmpDir, $hypName . ".hfact");
+		maybelink($hypSrcDir, $refSrcHash->{'srchyp'}, $tmpDir, $hypName . ".hfact");
 		maybelink($refSrcDir, $refSrcHash->{'ref'}, $tmpDir, $hypName . ".rfact");
 		maybelink($refSrcDir, $refSrcHash->{'src'}, $tmpDir, $hypName . ".sfact");
 	}
@@ -71,9 +78,13 @@ sub maybelink {
 		$oldFile = Cwd::cwd() . "/" . $oldFile;
 	}
 	
+	unless (-e $oldFile) {
+		die("Failed to link to `$oldFile', file does not exist");
+	}
+	
 	unless (-l $newFile) {
 		symlink($oldFile, $newFile);
-		print "linked $newFile --> $oldFile;\n";
+		print STDERR "linked $newFile --> $oldFile;\n";
 	}
 }
 
@@ -82,7 +93,7 @@ sub maybelink {
 #####
 sub syscmd {
 	my ($cmd) = @_;
-	print "\nRunning $cmd:\n";
+	print STDERR "\nRunning $cmd:\n";
 	system($cmd);
 }
 

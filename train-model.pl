@@ -60,9 +60,7 @@ sub displayStats {
 	
 	my $files = {};
 	
-	my $fh = undef;
-	
-	open($fh, ">$filename") or die("Failed to open `$filename' for writing");
+	open(my $fh, ">$filename") or die("Failed to open `$filename' for writing");
 	
 	while (my ($path, $pHash) = each %$stats) {
 		while (my ($lineNr, $lHash) = each %$pHash) {
@@ -134,10 +132,6 @@ sub loadData {
 		my ($prePath, $tgtLang, $set) = ($1, $2, $3);
 
 		$path = "$prePath/src-ref/$set.$tgtLang.$common::vecSuffix";
-	}
-	
-	if ($path =~ /_ref/) {
-		die("Path `$path' still contains _ref");
 	}
 	
 	unless (-e $path) {
@@ -260,6 +254,7 @@ sub getTuplesFromRankFile {
 			my $srcName = "$setId.$srcLang";
 			
 			$result->{ $hypName } = {
+				'srchyp' => (($sysId eq "_ref")? $refName: $hypName),
 				'ref' => $refName,
 				'src' => $srcName};
 		}
