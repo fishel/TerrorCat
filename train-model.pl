@@ -16,32 +16,31 @@ use arfflib;
 use common;
 
 # handle cmdline options and arguments
-my ($manRankFilename, $hypSourceDir, $refSourceDir, $modelFilename, $tempDir) = processArgs();
+my ($workDir, $manRankFilename, $hypSourceDir, $refSourceDir, $modelFilename) = processArgs();
 
 # create a workdir
-$tempDir = common::initTempDir($tempDir);
+$workDir = common::initWorkDir($workDir);
 
-my $trainingFilename = $tempDir . "/train.arff";
+my $trainingFilename = $workDir . "/train.arff";
 
 my $manRankData = readManRanks($manRankFilename);
 
-# rebuild training file if necessary
-unless (-e $trainingFilename) {
-	# get list of hyp-ref-src tuples from manual ranking file
-	my $tuples = getTuplesFromRankFile($manRankData);
-	
-	# make links to hyp, ref and src files
-	common::linkFiles($hypSourceDir, $refSourceDir, $tuples, $tempDir);
-	
-	# use the Makefile to build freqvec files
-	common::buildFiles($tempDir, $tuples);
-	
-	# build the training set file
-	createTrainingFile($manRankData, $tempDir . "/" . $common::auxFilesDir, $trainingFilename);
-}
+# get list of hyp-ref-src tuples from manual ranking file
+my $tuples = getTuplesFromRankFile($manRankData);
+
+# make links to hyp, ref and src files
+common::linkFiles($hypSourceDir, $refSourceDir, $tuples, $workDir);
+
+# use the Makefile to build freqvec files
+common::buildFiles($workDir, $tuples);
+
+# build the training set file
+createTrainingFile($manRankData, $workDir . "/" . $common::auxFilesDir, $trainingFilename);
 
 # train a model on the newly created file
 common::syscmd("java -Xmx5g -cp $common::wekaJar $common::wekaClassifier -v -M $common::wekaMoreArgs -t $trainingFilename -T $trainingFilename -d $modelFilename");
+
+print STDERR "done\n";
 
 #####
 #
@@ -62,6 +61,8 @@ sub readManRanks {
 #
 #####
 sub createTrainingFile {
+	print STDERR "Creating the trainining set file\n";
+	
 	my ($manRankData, $tmpAuxDir, $tgtFilename) = @_;
 	
 	my $stats = fillStats($manRankData, $tmpAuxDir);
@@ -79,9 +80,17 @@ sub displayStats {
 	
 	open(my $fh, ">$filename") or die("Failed to open `$filename' for writing");
 	
-	while (my ($path, $pHash) = each %$stats) {
-		while (my ($lineNr, $lHash) = each %$pHash) {
-			while (my ($id, $cmp) = each %$lHash) {
+	#while (my ($path, $pHash) = each %$stats) {
+	#	while (my ($lineNr, $lHash) = each %$pHash) {
+	#		while (my ($id, $cmp) = each %$lHash) {
+	for my $path (sort keys %$stats) {
+		my $pHash = $stats->{$path};
+		
+		for my $lineNr (sort keys %$pHash) {
+			my $lHash = $pHash->{$lineNr};
+			
+			for my $id (sort keys %$lHash) {
+				my $cmp = $lHash->{$id};
 				my $firstBetter = $cmp->{1};
 				my $secondBetter = $cmp->{-1};
 				
@@ -309,12 +318,12 @@ sub maybeclose {
 sub processArgs {
 	common::processOptions();
 	
-	if (@ARGV < 4) {
+	if (@ARGV < 5) {
 		print STDERR "This script trains a model using a manual ranking file and\n" .
 			"a set of hypothesis translations from a given directory\n" .
 			"(and their corresponding source and reference files in another given directory)\n\n" .
-			"Usage: train-model.pl [options] man-rank-file hyp-dir ref-dir file-to-save-model-to [temp-dir]\n\n" .
-			"specify the same temp-dir to avoid re-generating the error analysis files and such\n\n" .
+			"Usage: train-model.pl [options] work-dir man-rank-file hyp-dir ref-dir file-to-save-model-to\n\n" .
+			"the working directory is used to generate error analysis and other files\n\n" .
 			"Options: -m sets the number of threads to use (default: 2)\n\n";
 		die;
 	}

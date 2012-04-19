@@ -10,37 +10,39 @@ BEGIN {
 use arfflib;
 use common;
 
-my ($hypSourceDir, $refSourceDir, $modelFilename, $tempDir) = processArgs();
+my ($workDir, $hypSourceDir, $refSourceDir, $modelFilename) = processArgs();
 
 # create a workdir
-$tempDir = common::initTempDir($tempDir);
+$workDir = common::initWorkDir($workDir);
 
-my $labelmeFilename = $tempDir . "/labelme.arff";
-my $labelmeIdsFn = $tempDir . "/labelme.ids";
+my $labelmeFilename = $workDir . "/labelme.arff";
+my $labelmeIdsFn = $workDir . "/labelme.ids";
 
-unless (-e $labelmeFilename) {
-	# build freqvec files for the whole dir
-	my ($tuples, $set, $lp) = tuplesFromDir($hypSourceDir, $refSourceDir);
+# build freqvec files for the whole dir
+my ($tuples, $set, $lp) = tuplesFromDir($hypSourceDir, $refSourceDir);
 
-	# make links to hyp, ref and src files
-	common::linkFiles($hypSourceDir, $refSourceDir, $tuples, $tempDir);
+# make links to hyp, ref and src files
+common::linkFiles($hypSourceDir, $refSourceDir, $tuples, $workDir);
 
-	# use the Makefile to build freqvec files
-	common::buildFiles($tempDir, $tuples);
-	
-	# create the unlabelled set file
-	createLabelmeFile($tuples, $set, $lp, $tempDir . "/" . $common::auxFilesDir, $labelmeFilename, $labelmeIdsFn);
-}
+# use the Makefile to build freqvec files
+common::buildFiles($workDir, $tuples);
+
+# create the unlabelled set file
+createLabelmeFile($tuples, $set, $lp, $workDir . "/" . $common::auxFilesDir, $labelmeFilename, $labelmeIdsFn);
 
 my $sysLevIndicator = ($common::doSegLev? "": "x");
 
 # apply the classifier to predict on the created labelme file:
 common::syscmd("java -Xmx5g -cp $common::wekaJar $common::wekaClassifier -T $labelmeFilename -l $modelFilename -classifications weka.classifiers.evaluation.output.prediction.CSV | cut -d , -f 3,5 | cut -d : -f 2 | grep -v '^\\s*\$' | tail -n +3 | paste -d , $labelmeIdsFn - | perl $Bin/bin/genfinscores.pl $sysLevIndicator");
 
+print STDERR "done\n";
+
 #####
 #
 #####
 sub createLabelmeFile {
+	print STDERR "Creating the labelme set file\n";
+	
 	my ($tuples, $set, $lp, $srcDir, $labelmeFeatFn, $labelmeIdsFn) = @_;
 	
 	my $data = [];
@@ -162,11 +164,11 @@ sub tuplesFromDir {
 sub processArgs {
 	common::processOptions();
 	
-	if (@ARGV < 3) {
+	if (@ARGV < 4) {
 		print STDERR "This script applies a previously trained model to rank\n" .
 			"a set of hypothesis translations from a given directory\n" .
 			"(and their corresponding source and reference files in another given directory)\n\n" .
-			"Usage: score.pl [options] hypothesis-files-dir reference-files-dir trained-model-filename [temporary-dir]\n\n" .
+			"Usage: score.pl [options] work-dir hypothesis-files-dir reference-files-dir trained-model-filename\n\n" .
 			"specify the same temp-dir to avoid re-generating the error analysis files and such\n\n" . 
 			"Options: -m sets the number of threads to use (default: 2), -s produces segment-level scores instead of system-level\n\n";
 		die;

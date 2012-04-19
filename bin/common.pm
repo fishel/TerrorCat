@@ -29,22 +29,22 @@ sub processOptions {
 #####
 #
 #####
-sub initTempDir {
-	my ($tmpDir) = @_;
+sub initWorkDir {
+	my ($workDir) = @_;
 	
-	unless (defined($tmpDir)) {
-		$tmpDir = tempdir("terrorcat-XXXXX");
+	unless (defined($workDir)) {
+		$workDir = tempdir("terrorcat-XXXXX");
 	}
 	
-	unless (-e $tmpDir) {
-		mkdir($tmpDir);
+	unless (-e $workDir) {
+		mkdir($workDir);
 	}
 	
-	unless (-e "$tmpDir/$auxFilesDir") {
-		mkdir("$tmpDir/$auxFilesDir");
+	unless (-e "$workDir/$auxFilesDir") {
+		mkdir("$workDir/$auxFilesDir");
 	}
 	
-	return $tmpDir;
+	return $workDir;
 }
 
 #####

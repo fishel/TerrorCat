@@ -25,19 +25,8 @@ use warnings;
 # data_RNK_Spanish-English.csv
 # The resulting tau value is written to standard output.
 
-my @metrics = ( "TerrorCat", "mp4ibm1", "MTeRater-Plus", "AMBER_ti", "meteor-1.3-rank" );
+my @metrics = ( "TerrorCat" );
 my @langPairs = ( "fr-en", "de-en", "es-en", "cz-en", "en-fr", "en-de", "en-es", "en-cz");
-
-my %metricType;
-foreach my $metric (@metrics) {
-    $metricType{$metric} = "acc";
-}
-# keep track of which metrics are error metrics
-$metricType{"mp4ibm1"} = "err";
-$metricType{"mp4ibm1"} = "err";
-$metricType{"MTeRater"} = "err";
-$metricType{"MTeRater-Plus"} = "err";
-$metricType{"TER"} = "err";
 
 my %metricScores;
 
@@ -53,12 +42,15 @@ close METRICSCORES;
 my %ctConcordPairs;
 my %ctDiscordPairs;
 
+my $genTestSet;
+
 open HUMANSCORES, '<', $ARGV[1];
 while (<HUMANSCORES>) {
 	#(my $srclang, my $trglang, my $srcIndex, my $documentId, my $segmentId, my $judgeId, my $system1Number, my $system1Id, my $system2Number, my $system2Id, my $system3Number, my $system3Id, my $system4Number, my $system4Id, my $system5Number, my $system5Id, my $system1rank, my $system2rank, my $system3rank, my $system4rank, my $system5rank) = split(/,/, $_);
 	#(my $langPair, my $testSet) = split(/\./, $documentId);
-	my ($langPair, $testSet, $segmentId, $system1Id, $system1rank, $system2Id, $system2rank, $system3Id, $system3rank, $system4Id, $system4rank, $system5Id, $system5rank) = split(/,/);
 	#$testSet = "newssyscombtest2011";
+	my ($langPair, $testSet, $segmentId, $system1Id, $system1rank, $system2Id, $system2rank, $system3Id, $system3rank, $system4Id, $system4rank, $system5Id, $system5rank) = split(/,/);
+	$genTestSet = $testSet;
 	my @systems = ( $system1Id, $system2Id, $system3Id, $system4Id, $system5Id );
 	my @humanScores = ( $system1rank, $system2rank, $system3rank, $system4rank, $system5rank );
 	for (my $i=0; $i < @systems; $i++) {
@@ -75,17 +67,6 @@ while (<HUMANSCORES>) {
 					my $metricScoreA = $metricScores{$metric}{$langPair}{$testSet}{$segmentId}{$sysA};
 					my $metricScoreB = $metricScores{$metric}{$langPair}{$testSet}{$segmentId}{$sysB};
 
-					# error metrics (better translation = lower human ranking value, lower 
-					# automatic metric score)		
-					if ($metricType{$metric} eq "err") {
-						if ($humanScoreA > $humanScoreB && $metricScoreA > $metricScoreB) {
-							$ctConcordPairs{$metric}{$langPair}{$testSet}++;
-						} elsif ($humanScoreA < $humanScoreB && $metricScoreA < $metricScoreB) {
-							$ctConcordPairs{$metric}{$langPair}{$testSet}++;
-						} else {
-							$ctDiscordPairs{$metric}{$langPair}{$testSet}++;
-						}
-					} else {
 					    # accuracy metrics (better translation = lower human ranking value, higher 
 					    # automatic metric score)
 					    if ($humanScoreA > $humanScoreB && $metricScoreA < $metricScoreB) {
@@ -95,7 +76,6 @@ while (<HUMANSCORES>) {
 					    } else {
 						$ctDiscordPairs{$metric}{$langPair}{$testSet}++;
 					    }
-					}
 				    }
 				}
 			}
@@ -103,8 +83,6 @@ while (<HUMANSCORES>) {
 	}
 }
 close HUMANSCORES;
-
-my $testSet = "newssyscombtest2011";
 
 foreach my $langPair (@langPairs) {
 	print "\t$langPair";
@@ -115,10 +93,10 @@ foreach my $metric (@metrics) {
 	print $metric;
 	foreach my $langPair (@langPairs) {
 	    # tau calculation
-	    if(exists $ctConcordPairs{$metric}{$langPair}{$testSet} &&
-	       exists $ctDiscordPairs{$metric}{$langPair}{$testSet}) {
-		my $numPairs =  $ctConcordPairs{$metric}{$langPair}{$testSet} + $ctDiscordPairs{$metric}{$langPair}{$testSet};
-		my $tau = ($ctConcordPairs{$metric}{$langPair}{$testSet} - $ctDiscordPairs{$metric}{$langPair}{$testSet}) / $numPairs;
+	    if(exists $ctConcordPairs{$metric}{$langPair}{$genTestSet} &&
+	       exists $ctDiscordPairs{$metric}{$langPair}{$genTestSet}) {
+		my $numPairs =  $ctConcordPairs{$metric}{$langPair}{$genTestSet} + $ctDiscordPairs{$metric}{$langPair}{$genTestSet};
+		my $tau = ($ctConcordPairs{$metric}{$langPair}{$genTestSet} - $ctDiscordPairs{$metric}{$langPair}{$genTestSet}) / $numPairs;
 		if($tau =~ /\d\.\d\d\d/) {
 		    $tau =~ m/(\d\.\d\d)(\d)/;
 		    $tau = $1;

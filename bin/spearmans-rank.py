@@ -18,11 +18,9 @@ import sys
 
 significant_digits = 3
 
-#sys.stdin = open(sys.argv[1], 'r')
 title = sys.stdin.readline()
 title = title.rstrip('\n')
 metric_names = sys.stdin.readline().split()
-all_metric_names = [ "HUMAN_RANK", "TerrorCat", "BLEU", "mp4ibm1", "MTeRater-Plus", "AMBER_ti", "meteor-1.3-rank" ]
 
 metric_scores = {}
 for metric in metric_names:
@@ -34,10 +32,4 @@ for line in sys.stdin:
    for i in range(1, len(scores)):
       metric_scores[metric_names[i-1]].append(scores[i])
 
-metric = "HUMAN_RANK"
-print '\t', title, '-', len(metric_scores[metric]), 'systems'
-for metric_2 in all_metric_names:
-   if metric_2 in metric_scores:
-      print metric_2, '\t', round(scipy.stats.stats.spearmanr(metric_scores[metric], metric_scores[metric_2])[0], significant_digits)
-   else:
-      print metric_2, '\t'
+print 'System-level correlation (Spearman\'s rho):', round(scipy.stats.stats.spearmanr(metric_scores["HUMAN_RANK"], metric_scores["TerrorCat"])[0], significant_digits)
