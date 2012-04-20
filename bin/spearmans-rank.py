@@ -32,4 +32,4 @@ for line in sys.stdin:
    for i in range(1, len(scores)):
       metric_scores[metric_names[i-1]].append(scores[i])
 
-print 'System-level correlation (Spearman\'s rho):', round(scipy.stats.stats.spearmanr(metric_scores["HUMAN_RANK"], metric_scores["TerrorCat"])[0], significant_digits)
+print round(scipy.stats.stats.spearmanr(metric_scores["HUMAN_RANK"], metric_scores["TerrorCat"])[0], significant_digits)

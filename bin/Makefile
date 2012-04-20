@@ -52,3 +52,13 @@ HJFACT_CHECKLEN=bash $(HOME)/bin/checklen.sh $< $@
 %.freqvec: %.add-freqvec %.hj-freqvec
 	paste -d , $^ > $@
 	@$(CHECKLEN)
+
+checkdir:
+ifeq ($(DIR),)
+	@echo "to build all files, please specify the directory (DIR) of the files"
+	@exit 1
+endif
+
+all: checkdir $(patsubst %.hfact,%.freqvec,$(wildcard $(DIR)/*.hfact))
+
+.PHONY: all

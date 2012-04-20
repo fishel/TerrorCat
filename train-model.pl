@@ -80,17 +80,9 @@ sub displayStats {
 	
 	open(my $fh, ">$filename") or die("Failed to open `$filename' for writing");
 	
-	#while (my ($path, $pHash) = each %$stats) {
-	#	while (my ($lineNr, $lHash) = each %$pHash) {
-	#		while (my ($id, $cmp) = each %$lHash) {
-	for my $path (sort keys %$stats) {
-		my $pHash = $stats->{$path};
-		
-		for my $lineNr (sort keys %$pHash) {
-			my $lHash = $pHash->{$lineNr};
-			
-			for my $id (sort keys %$lHash) {
-				my $cmp = $lHash->{$id};
+	while (my ($path, $pHash) = each %$stats) {
+		while (my ($lineNr, $lHash) = each %$pHash) {
+			while (my ($id, $cmp) = each %$lHash) {
 				my $firstBetter = $cmp->{1};
 				my $secondBetter = $cmp->{-1};
 				
@@ -154,11 +146,11 @@ sub loadData {
 	
 	my $path = $paramPath;
 	
-	if ($path =~ /^(.*)\/..-(..)\/([^.]+)\...-..\._ref\.$common::vecSuffix$/) {
-		my ($prePath, $tgtLang, $set) = ($1, $2, $3);
-
-		$path = "$prePath/src-ref/$set.$tgtLang.$common::vecSuffix";
-	}
+	#if ($path =~ /^(.*)\/..-(..)\/([^.]+)\...-..\._ref\.$common::vecSuffix$/) {
+	#	my ($prePath, $tgtLang, $set) = ($1, $2, $3);
+	#
+	#	$path = "$prePath/src-ref/$set.$tgtLang.$common::vecSuffix";
+	#}
 	
 	unless (-e $path) {
 		die("Path $path missing");
