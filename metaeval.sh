@@ -47,5 +47,5 @@ then
 		| python $bindir/spearmans-rank.py
 else
 	echo "Segment-level rank correlation:"
-	echo "(todo)"
+	$bindir/wmt11_segTau.pl $autoranks $manranks
 fi

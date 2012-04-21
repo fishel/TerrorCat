@@ -53,12 +53,16 @@ HJFACT_CHECKLEN=bash $(HOME)/bin/checklen.sh $< $@
 	paste -d , $^ > $@
 	@$(CHECKLEN)
 
-checkdir:
+checkvars:
 ifeq ($(DIR),)
 	@echo "to build all files, please specify the directory (DIR) of the files"
 	@exit 1
 endif
+ifeq ($(ALLTGT),)
+	@echo "to build all files, please specify the target extension (ALLTGT) of the files"
+	@exit 1
+endif
 
-all: checkdir $(patsubst %.hfact,%.freqvec,$(wildcard $(DIR)/*.hfact))
+all: checkvars $(patsubst %.hfact,%.$(ALLTGT),$(wildcard $(DIR)/*.hfact))
 
 .PHONY: all

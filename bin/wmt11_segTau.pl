@@ -25,8 +25,10 @@ use warnings;
 # data_RNK_Spanish-English.csv
 # The resulting tau value is written to standard output.
 
-my @metrics = ( "TerrorCat" );
-my @langPairs = ( "fr-en", "de-en", "es-en", "cz-en", "en-fr", "en-de", "en-es", "en-cz");
+#my @metrics = ( "TerrorCat" );
+#my @langPairs = ( "fr-en", "de-en", "es-en", "cz-en", "en-fr", "en-de", "en-es", "en-cz");
+
+my $mustBeUnique = { 'langpair' => undef, 'testset' => undef, 'metric' => undef };
 
 my %metricScores;
 
@@ -35,6 +37,11 @@ open METRICSCORES, '<', $ARGV[0];
 #<METRIC NAME>   <LANG-PAIR>   <TEST SET>   <SYSTEM>   <SEGMENT NUMBER>   <SEGMENT SCORE>
 while (<METRICSCORES>) {
 	(my $metric, my $langPair, my $testSet, my $sysID, my $segmentId, my $score) = split(/\t/, $_);
+	
+	checkUniqness($mustBeUnique, 'langpair', $langPair);
+	checkUniqness($mustBeUnique, 'testset', $testSet);
+	checkUniqness($mustBeUnique, 'metric', $metric);
+	
 	$metricScores{$metric}{$langPair}{$testSet}{$segmentId}{$sysID} = $score;
 }
 close METRICSCORES;
@@ -61,55 +68,60 @@ while (<HUMANSCORES>) {
 				my $sysB = $systems[$j];
 				my $humanScoreB = $humanScores[$j];
 				my $humanScoreA = $humanScores[$i];
-				foreach my $metric (@metrics) {
-				    if(exists $metricScores{$metric}{$langPair}{$testSet}{$segmentId}{$sysA} &&
-				       exists $metricScores{$metric}{$langPair}{$testSet}{$segmentId}{$sysB}) {
+				#foreach my $metric (@metrics) {
+				my $metric = $mustBeUnique->{'metric'};
+				
+				if(exists $metricScores{$metric}{$langPair}{$testSet}{$segmentId}{$sysA} &&
+					exists $metricScores{$metric}{$langPair}{$testSet}{$segmentId}{$sysB}) {
+					
 					my $metricScoreA = $metricScores{$metric}{$langPair}{$testSet}{$segmentId}{$sysA};
 					my $metricScoreB = $metricScores{$metric}{$langPair}{$testSet}{$segmentId}{$sysB};
 
-					    # accuracy metrics (better translation = lower human ranking value, higher 
-					    # automatic metric score)
-					    if ($humanScoreA > $humanScoreB && $metricScoreA < $metricScoreB) {
+					# accuracy metrics (better translation = lower human ranking value, higher 
+					# automatic metric score)
+					if ($humanScoreA > $humanScoreB && $metricScoreA < $metricScoreB) {
 						$ctConcordPairs{$metric}{$langPair}{$testSet}++;
-					    } elsif ($humanScoreA < $humanScoreB && $metricScoreA > $metricScoreB) {
+					}
+					elsif ($humanScoreA < $humanScoreB && $metricScoreA > $metricScoreB) {
 						$ctConcordPairs{$metric}{$langPair}{$testSet}++;
-					    } else {
+					}
+					else {
 						$ctDiscordPairs{$metric}{$langPair}{$testSet}++;
-					    }
-				    }
+					}
 				}
+				#}
 			}
 		}
 	}
 }
 close HUMANSCORES;
 
-foreach my $langPair (@langPairs) {
-	print "\t$langPair";
-}
-print "\n";
+my $metric = $mustBeUnique->{'metric'};
+my $langPair = $mustBeUnique->{'langpair'};
 
-foreach my $metric (@metrics) {
-	print $metric;
-	foreach my $langPair (@langPairs) {
-	    # tau calculation
-	    if(exists $ctConcordPairs{$metric}{$langPair}{$genTestSet} &&
-	       exists $ctDiscordPairs{$metric}{$langPair}{$genTestSet}) {
-		my $numPairs =  $ctConcordPairs{$metric}{$langPair}{$genTestSet} + $ctDiscordPairs{$metric}{$langPair}{$genTestSet};
-		my $tau = ($ctConcordPairs{$metric}{$langPair}{$genTestSet} - $ctDiscordPairs{$metric}{$langPair}{$genTestSet}) / $numPairs;
-		if($tau =~ /\d\.\d\d\d/) {
-		    $tau =~ m/(\d\.\d\d)(\d)/;
-		    $tau = $1;
-		    my $roundingDigit = $2;
-		    if($roundingDigit >= 5) {
-			$tau += 0.001;
-		    }
-		}
-		print "\t$tau ($numPairs)";
-	    } else {
-		print "\t n/a";
-	    }
-	}
-	print "\n";
+if (exists $ctConcordPairs{$metric}{$langPair}{$genTestSet} &&
+	 exists $ctDiscordPairs{$metric}{$langPair}{$genTestSet}) {
+	my $numPairs =  $ctConcordPairs{$metric}{$langPair}{$genTestSet} + $ctDiscordPairs{$metric}{$langPair}{$genTestSet};
+	my $tau = ($ctConcordPairs{$metric}{$langPair}{$genTestSet} - $ctDiscordPairs{$metric}{$langPair}{$genTestSet}) / $numPairs;
+	
+	printf "%.3f\n", $tau;
+}
+else {
+	print "n/a\n";
 }
 
+
+#####
+#
+#####
+sub checkUniqness {
+   my ($tgt, $key, $newval) = @_;
+   
+   if (!defined($tgt->{$key})) {
+   	$tgt->{$key} = $newval;
+   }
+   elsif ($tgt->{$key} ne $newval) {
+   	my $msg = "Conflicting $key: used to be `" . $tgt->{$key} . "', now it's `$newval'";
+	die($msg);
+   }
+}
