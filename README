@@ -139,6 +139,8 @@ TerrorCat uses Addicter, Hjerson and Weka:
 
 Weka's version -- not sure, but with 3.6.6 (and probably newer ones) it works.
 
+The paths to these Software packages can be set it the "config.ini" file.
+
 Also, TerrorCat has only been tested on Linux, but in theory it could work
 elsewhere (e.g. on Windows via Cygwin, or on MacOS). It contains Perl scripts,
 Bash scripts and GNU Make scripts, so Perl, Bash and Make are also a
