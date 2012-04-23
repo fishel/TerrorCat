@@ -6,19 +6,47 @@ use FindBin qw($Bin);
 use Cwd;
 use Getopt::Long;
 
-our $addicterPath = "/home/mphi/proj/addicter";
-our $hjersonPath = "/home/mphi/proj/hjerson";
-our $wekaJar = "/home/mphi/proj/weka/weka.jar";
+my $config = loadConfig("$Bin/config.ini");
+
+our $addicterPath = $config->{'ADDICTER_PATH'};
+our $hjersonPath = $config->{'HJERSON_PATH'};
+our $wekaJar = $config->{'WEKA_JAR_PATH'};
+our $threads = $config->{'DEFAULT_NUM_OF_THREADS'};
 
 our $wekaClassifier = "weka.classifiers.functions.SMO";
 our $sourceFileSuffix = ".fact";
-our $threads = 2;
 our $wekaMoreArgs = "-C 3";
 our $doSegLev = undef;
 
 our $vecSuffix = "freqvec";
 our $auxFilesDir = "auxfiles";
 
+#####
+#
+#####
+sub loadConfig {
+	my ($path) = @_;
+	
+	my $result = {};
+	
+	open(FH, $path) or die ("Failed to open `$path' for reading");
+	
+	while (<FH>) {
+		s/[\n\r]//g;
+		
+		my ($key, $val) = split(/=/, $_, 2);
+		
+		$result->{$key} = $val;
+	}
+	
+	close(FH);
+	
+	return $result;
+}
+
+#####
+#
+#####
 sub processOptions {
 	GetOptions(
 		'm=i' => \$threads,
@@ -34,6 +62,7 @@ sub initWorkDir {
 	
 	unless (defined($workDir)) {
 		$workDir = tempdir("terrorcat-XXXXX");
+		print STDERR "work-dir is $workDir\n";
 	}
 	
 	unless (-e $workDir) {

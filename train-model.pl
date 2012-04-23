@@ -1,11 +1,6 @@
 #!/usr/bin/perl
 use strict;
 
-########################
-# TODO: parameter processing, complaining about bad parameters, parametrize #threads, re-doing & others,
-# usage message,...
-########################
-
 use FindBin qw($Bin);
 
 BEGIN {
@@ -16,7 +11,7 @@ use arfflib;
 use common;
 
 # handle cmdline options and arguments
-my ($workDir, $manRankFilename, $hypSourceDir, $refSourceDir, $modelFilename) = processArgs();
+my ($workDir, $manRankFilename, $sourceDir, $modelFilename) = processArgs();
 
 # create a workdir
 $workDir = common::initWorkDir($workDir);
@@ -29,7 +24,7 @@ my $manRankData = readManRanks($manRankFilename);
 my $tuples = getTuplesFromRankFile($manRankData);
 
 # make links to hyp, ref and src files
-common::linkFiles($hypSourceDir, $refSourceDir, $tuples, $workDir);
+common::linkFiles($sourceDir, $sourceDir, $tuples, $workDir);
 
 # use the Makefile to build freqvec files
 common::buildFiles($workDir, $tuples);
@@ -310,13 +305,22 @@ sub maybeclose {
 sub processArgs {
 	common::processOptions();
 	
-	if (@ARGV < 5) {
-		print STDERR "This script trains a model using a manual ranking file and\n" .
-			"a set of hypothesis translations from a given directory\n" .
-			"(and their corresponding source and reference files in another given directory)\n\n" .
-			"Usage: train-model.pl [options] work-dir man-rank-file hyp-dir ref-dir file-to-save-model-to\n\n" .
-			"the working directory is used to generate error analysis and other files\n\n" .
-			"Options: -m sets the number of threads to use (default: 2)\n\n";
+	if (@ARGV < 4) {
+		print STDERR
+"This script trains a model using a manual ranking file and
+a set of hypothesis translations from a given directory
+(and their corresponding source and reference files in another given directory)
+
+Usage: train-model.pl [options] work-dir man-rank-file file-source-dir file-to-save-model-to
+
+the work-dir can be a new, non-existent directory (which will be created),
+but specify the same path to avoid re-generating the error analysis files
+during repeated experiments
+
+Options:
+   -m sets the number of threads to use (default: 2)
+
+";
 		die;
 	}
 	

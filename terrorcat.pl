@@ -10,7 +10,7 @@ BEGIN {
 use arfflib;
 use common;
 
-my ($workDir, $hypSourceDir, $refSourceDir, $modelFilename) = processArgs();
+my ($workDir, $sourceDir, $modelFilename) = processArgs();
 
 # create a workdir
 $workDir = common::initWorkDir($workDir);
@@ -19,10 +19,10 @@ my $labelmeFilename = $workDir . "/labelme.arff";
 my $labelmeIdsFn = $workDir . "/labelme.ids";
 
 # build freqvec files for the whole dir
-my ($tuples, $set, $lp) = tuplesFromDir($hypSourceDir, $refSourceDir);
+my ($tuples, $set, $lp) = tuplesFromDir($sourceDir, $sourceDir);
 
 # make links to hyp, ref and src files
-common::linkFiles($hypSourceDir, $refSourceDir, $tuples, $workDir);
+common::linkFiles($sourceDir, $sourceDir, $tuples, $workDir);
 
 # use the Makefile to build freqvec files
 common::buildFiles($workDir, $tuples);
@@ -164,13 +164,22 @@ sub tuplesFromDir {
 sub processArgs {
 	common::processOptions();
 	
-	if (@ARGV < 4) {
-		print STDERR "This script applies a previously trained model to rank\n" .
-			"a set of hypothesis translations from a given directory\n" .
-			"(and their corresponding source and reference files in another given directory)\n\n" .
-			"Usage: score.pl [options] work-dir hypothesis-files-dir reference-files-dir trained-model-filename\n\n" .
-			"specify the same temp-dir to avoid re-generating the error analysis files and such\n\n" . 
-			"Options: -m sets the number of threads to use (default: 2), -s produces segment-level scores instead of system-level\n\n";
+	if (@ARGV < 3) {
+		print STDERR
+"This script applies a previously trained model to rank
+a set of hypothesis translations from a given directory
+
+Usage: score.pl [options] work-dir file-source-dir trained-model-file
+
+the work-dir can be a new, non-existent directory (which will be created),
+but specify the same path to avoid re-generating the error analysis files
+during repeated experiments
+
+Options:
+   -m sets the number of threads to use (default: 2)
+   -s produces segment-level scores instead of system-level
+
+";
 		die;
 	}
 	

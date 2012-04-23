@@ -2,24 +2,20 @@
 
 bindir=$( dirname $0 )/bin
 
-while getopts ":s" opt; do
-	case $opt in
-		s)
-			seglev=1
-			shift
-			;;
-		\?)
-			echo "Invalid option -$OPTARG" >& 2
-			;;
-	esac
-done
-
 manranks=$1
 autoranks=$2
 
 if [[ -z $manranks || -z $autoranks ]]
 then
-	echo "Usage: evalsys.sh [-s] man-ranks auto-sys-metrics" >&2
+	cat >&2 <<HERE
+This script calculates the correlation between manual and
+automatic ranking; it uses Spearman's rho for document-level
+evaluation and Kendall's tau for sentence-level evaluation
+
+Usage: metaeval.sh man-ranks auto-sys-metrics
+
+HERE
+	
 	exit 1
 fi
 
@@ -35,7 +31,7 @@ then
 	exit 1
 fi
 
-if [ -z $seglev ]
+if [[ -z "$( head -1 $autoranks | cut -f 6 )" ]]
 then
 	echo "System-level rank correlation:"
 	cat $manranks \

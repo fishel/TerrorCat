@@ -1,0 +1,169 @@
+TerrorCat
+
+http://terra.cl.uzh.ch/terrorcat.html
+
+TODO POS-SETS
+
+* WHAT IS IT
+
+TerrorCat performs automatic ranking of translations -- i.e. given several
+translations (e.g. done by several MT systems) of the same source text,
+it will rank those translations according to their quality.
+
+
+* WHAT IS IT NOT
+
+TerrorCat is not an MT metric (like BLEU, TER or METEOR) -- you cannot use its
+output as an objective and independent estimate of translation quality; it can
+only rank translations, relative to other translations.
+
+
+* HOW DOES IT DO IT
+
+TerrorCat is based on automatic translation error categorization; it uses
+Addicter and Hjerson to automatically analyze and categorize translation errors
+of every hypothesis translation, then calculates the frequency of every error
+type per part-of-speech (in other words, frequencies of missing nouns/missing
+verbs/superfluous nouns/superfluous adjectives/misinflected nouns/misplaced
+nouns/etc. for every type of error and every part of speech), then uses those
+frequencies for pairwise comparison of the translation sentences (using a
+trained binary classifier), and finally computes the final ranking based on
+the outcome of all the pairwise comparisons.
+
+* HOW DO I APPLY IT
+
+First, take a look at the dependencies section down below.
+
+To rank a set of hypothesis translations, you need to
+1. lemmatize and PoS-tag the source text, the reference and the hypothesis
+  translations
+- save them all in the factored format "surface-form|pos-tag|lemma", for
+  example
+  ======
+  the|DT|the cars|NN|car were|VB|be small|JJ|small .|SENT|.
+  ======
+- name the source and reference files in the convention
+  <test-set>.<language>.fact, for example newstest2011.fr.fact and
+  newstest2011.en.fact
+- name the hypothesis files in the convention
+  <test-set>.<language-pair>.<MT-system-ID>.fact, for example
+  newstest2011.fr-en.uedin.fact, newstest2011.fr-en.cmu.fact and
+  newstest2011.fr-en.cu-combo.fact
+- place them all in a single folder
+
+2. launch TerrorCat's ranking with the script terrorcat.pl:
+
+./terrorcat.pl [options] work-dir source-dir model-file > output.txt
+
+- work-dir is a path for saving auxilliary files, such as automatic error
+  analysis output and such; you can specify a non-existent path and it will
+  be created. To avoid having to re-generate the error analysis, always
+  specify the same path -- as long as file names do not intersect, you can
+  re-use the folder over several sessions (with different languages, etc.)
+- source-dir is the path to where you put the source texts and reference and
+  hypothesis translations
+- model-file is the path to the pre-trained model for the pairwise
+  classifier; you can download models from the homepage, or train your own
+- output.txt is the file where you want the ranking saved; the format is the
+  same as for the WMT metric shared tasks
+  (e.g. http://www.statmt.org/wmt12/metrics-task.html)
+- the options include
+   -s to switch to sentence-level ranking (default: document-level ranking)
+   -m to set the number of threads to use (default: 2)
+
+
+* HOW DO I TRAIN A NEW MODEL
+
+First, take a look at the dependencies section down below.
+
+To train a new model for TerrorCat you need a set of manually ranked
+translations -- the source text, reference and two or more hypothesis
+translations and their quality comparison on a per-sentence basis.
+
+1. launch the training with the script train-model.pl:
+
+./train-model.pl [options] work-dir source-dir man-rank-file model-file
+
+- work-dir is a path for saving auxilliary files, such as automatic error
+  analysis output and such; you can specify a non-existent path and it will
+  be created. To avoid having to re-generate the error analysis, always
+  specify the same path -- as long as file names do not intersect, you can
+  re-use the folder over several sessions (with different languages, etc.)
+- source-dir is where you placed the source text, reference and hypothesis
+  translation files
+- man-rank-file is the file with the manual translation rankings on a
+  per-sentence basis; the format is
+
+  ======
+  language-pair,test-set-id,line-nr,sys-1-id,sys-1-rank,sys-2-id,sys-2-rank,...
+  ...
+  ======
+
+  for example
+
+  ======
+  fr-en,newstest2011,42,uedin,1,cmu,2,cu-combo,1
+  ======
+
+  and a couple of hundred (or thousand) more of such lines.
+
+- model-file is the path to where to save the model file (to pass to the
+  applying script terrorcat.pl afterwords)
+- the options include
+   -m to set the number of threads to use (default: 2)
+
+
+* HOW DO I META-EVALUATE
+
+If you have a trained model and a manual ranking file for data, that was not
+involved in training the model, you can calculate the correlation between
+TerrorCat's ranking and manual ranking. To do so, use the script metaeval.sh:
+
+   ./metaeval.sh man-ranks auto-ranks
+
+   - man-ranks is the file with manual ranking data in the same format as for
+     training models (see above)
+   - auto-ranks is the output of TerrorCat's ranking script; metaeval.sh will
+     automatically guess, whether the ranking output was on document or sentence
+     level and calculate the appropriate correlation coefficient (Spearman's Rho
+     for document level and Kendall's Tau for sentence level)
+
+
+* WHAT ARE THE DEPENDENCIES
+
+TerrorCat uses Addicter, Hjerson and Weka:
+
+- https://wiki.ufal.ms.mff.cuni.cz/user:zeman:addicter
+- http://www.dfki.de/~mapo02/hjerson/
+- http://www.cs.waikato.ac.nz/ml/weka/
+
+Weka's version -- not sure, but with 3.6.6 (and probably newer ones) it works.
+
+Also, TerrorCat has only been tested on Linux, but in theory it could work
+elsewhere (e.g. on Windows via Cygwin, or on MacOS). It contains Perl scripts,
+Bash scripts and GNU Make scripts, so Perl, Bash and Make are also a
+requirement.
+
+
+* HOW WELL DOES IT WORK
+
+The correlation with human judgements varies, depending on the language, text
+domain, size of training data used to create the model, etc. When evaluated on
+WMT'2011 data, document-level correlations were:
+
+English: 0.854
+French:  0.919
+German:  0.879
+Spanish: 0.943
+Czech:   0.915
+
+and sentence-level correlations were:
+
+English: 0.305
+French:  0.3
+German:  0.175
+Spanish: 0.254
+Czech:   0.208
+
+See the homepage for more recent evaluation results.
+
