@@ -82,7 +82,7 @@ translations and their quality comparison on a per-sentence basis.
 
 1. launch the training with the script train-model.pl:
 
-./train-model.pl [options] work-dir source-dir man-rank-file model-file
+./train-model.pl [options] work-dir man-rank-file source-dir model-file
 
 - work-dir is a path for saving auxilliary files, such as automatic error
   analysis output and such; you can specify a non-existent path and it will
